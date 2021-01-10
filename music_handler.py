@@ -13,7 +13,8 @@ def extract_song_snippet(text):
 
 def save_song_to_abc(song, filename="tmp"):
     save_name = "{}.abc".format(filename)
-    with open(save_name, "w") as f:
+    save_path = os.path.join(cwd, 'music_file', save_name)
+    with open(save_path, "w") as f:
         f.write(song)
     return filename
 
@@ -23,9 +24,20 @@ def abc2wav(abc_file):
     cmd = "{} {}".format(path_to_tool, abc_file)
     return os.system(cmd)
 
+def abc2midi(abc_file, remove_abc=True):
+    path_to_tool = os.path.join(cwd, 'bin', 'abc2midi.exe')
+    input_file_path = os.path.join('music_file', abc_file)
+    output_file_path = os.path.join('music_file', abc_file[:-4] + ".mid")
+    cmd = "{} {} -o {}".format(path_to_tool, input_file_path, output_file_path)
+    ret = os.system(cmd)
+    if remove_abc:
+        os.remove(input_file_path)
+    return ret
+
 def play_song(song):
     basename = save_song_to_abc(song)
-    ret = abc2wav(basename+'.abc')
+    ret = abc2midi(basename+'.abc')
+    # ret = abc2wav(basename+'.abc')
     # if ret == 0: #did not suceed
     #     return play_wav(basename+'.wav')
     # return None
