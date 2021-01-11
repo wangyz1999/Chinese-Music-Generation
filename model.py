@@ -68,7 +68,7 @@ class LSTMMusicGenerator(nn.Module):
     def __init__(self, vocab_size, embedding_dim, rnn_units):
         super(LSTMMusicGenerator, self).__init__()
         self.embeddings = nn.Embedding(vocab_size, embedding_dim)
-        self.lstm = nn.LSTM(embedding_dim, rnn_units)
+        self.lstm = nn.LSTM(embedding_dim, rnn_units, batch_first=True)
         self.fc = nn.Linear(rnn_units, vocab_size)
 
     def forward(self, sequence):
@@ -87,7 +87,8 @@ def train(model,
           checkpoint_loc,
           lr=5e-3,
           criterion = nn.CrossEntropyLoss(),
-          n_epoch = 2000
+          n_epoch = 2000,
+          save_model=True
           ):
 
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -107,10 +108,15 @@ def train(model,
         optimizer.step()
 
         # print(f"Epoch {epoch}, Loss: {loss:.4f}")
-        if not (epoch % 100):
+        if not (epoch % 5):
             tqdm.write(f"Loss: {loss:.4f}")
+
+        if epoch in [0, 1, 3, 7, 12, 18, 25, 33, 42, 52, 63, 74, 87, 101, 115, 130, 147, 163, 181, 200, 219, 239,
+                     260, 282, 305, 328, 352, 377, 402, 428, 455, 483, 512, 541, 571, 601, 632, 664, 697, 730, 765,
+                     799, 835, 871, 908, 945, 983, 999]:
             save_path = os.path.join(checkpoint_loc, f"epoch{epoch}.pt")
-            torch.save(model.state_dict(), save_path)
+            if save_model:
+                torch.save(model.state_dict(), save_path)
 
 def generate_text(model, start_string, generation_length=1000):
     input_eval = torch.tensor([char2idx[s] for s in start_string]).long()
@@ -136,8 +142,8 @@ if __name__ == '__main__':
     ### Hyperparameter setting and optimization ###
 
     # Optimization parameters:
-    num_training_iterations = 2000  # Increase this to train longer
-    batch_size = 4  # Experiment between 1 and 64
+    num_training_iterations = 1000  # Increase this to train longer
+    batch_size = 16  # Experiment between 1 and 64
     seq_length = 100  # Experiment between 50 and 500
     learning_rate = 5e-3  # Experiment between 1e-5 and 1e-1
 
@@ -155,11 +161,11 @@ if __name__ == '__main__':
     vectorized_songs = vectorize_string(songs, char2idx)
     model = LSTMMusicGenerator(vocab_size, embedding_dim, rnn_units)
     #
-    # train(model, seq_length=seq_length, batch_size=batch_size, lr=learning_rate, checkpoint_loc=checkpoint_dir,
-    #       train_data=vectorized_songs, n_epoch=num_training_iterations)
-    model.load_state_dict(torch.load(os.path.join("training_checkpoints", "epoch1000.pt")))
-    print(model)
-    model.eval()
+    train(model, seq_length=seq_length, batch_size=batch_size, lr=learning_rate, checkpoint_loc=checkpoint_dir,
+          train_data=vectorized_songs, n_epoch=num_training_iterations, save_model=True)
+    # model.load_state_dict(torch.load(os.path.join("training_checkpoints", "epoch1000.pt")))
+    # print(model)
+    # model.eval()
 
     song = generate_text(model, "X", generation_length=1000)
 
